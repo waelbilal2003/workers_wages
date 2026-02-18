@@ -48,3 +48,4 @@ jobs:
         with:
           name: release-apk-arm64-v8a
           path: build/app/outputs/flutter-apk/أجرة العمال.apk
+          
