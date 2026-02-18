@@ -1,4 +1,6 @@
+// lib/screens/payroll_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/payroll_service.dart';
 
 class PayrollScreen extends StatefulWidget {
@@ -18,6 +20,19 @@ class _PayrollScreenState extends State<PayrollScreen> {
   void initState() {
     super.initState();
     _payrollFuture = _payrollService.calculatePayroll(widget.selectedDate);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    super.dispose();
   }
 
   @override
@@ -49,49 +64,85 @@ class _PayrollScreenState extends State<PayrollScreen> {
             }
 
             final results = snapshot.data!;
+            // === START OF CHANGES: Replacing DataTable with Table ===
             return SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 20,
-                  columns: const [
-                    DataColumn(
-                        label: Text('العامل',
-                            style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('أيام الدوام',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        numeric: true),
-                    DataColumn(
-                        label: Text('أيام الغياب',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        numeric: true),
-                    DataColumn(
-                        label: Text('دفعة من الحساب',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        numeric: true),
-                    DataColumn(
-                        label: Text('الاستحقاق',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        numeric: true),
-                  ],
-                  rows: results
-                      .map((result) => DataRow(cells: [
-                            DataCell(Text(result.workerName)),
-                            DataCell(Text(result.totalEarned)),
-                            DataCell(Text(result.absentDays.toString())),
-                            DataCell(Text(result.advances.toStringAsFixed(2))),
-                            DataCell(Text(result.netDue,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green))),
-                          ]))
-                      .toList(),
-                ),
+              child: Table(
+                border: TableBorder.all(color: Colors.grey.shade300),
+                // هذا هو مفتاح الحل: توزيع المساحة بالتساوي على 5 أعمدة
+                columnWidths: const <int, TableColumnWidth>{
+                  0: FlexColumnWidth(), // العامل
+                  1: FlexColumnWidth(), // مجموع الأجرة
+                  2: FlexColumnWidth(), // أيام الغياب
+                  3: FlexColumnWidth(), // دفعة من الحساب
+                  4: FlexColumnWidth(), // الاستحقاق
+                },
+                children: [
+                  // صف الرأس
+                  TableRow(
+                    decoration:
+                        BoxDecoration(color: Colors.purple.withOpacity(0.1)),
+                    children: [
+                      _buildHeaderCell('العامل'),
+                      _buildHeaderCell('مجموع الأجرة'),
+                      _buildHeaderCell('أيام الغياب'),
+                      _buildHeaderCell('دفعة من الحساب'),
+                      _buildHeaderCell('الاستحقاق'),
+                    ],
+                  ),
+                  // صفوف البيانات
+                  ...results.map((result) {
+                    final totalEarnedNoDecimal =
+                        result.totalEarned.replaceAll(RegExp(r'\.00'), '');
+                    final netDueNoDecimal =
+                        result.netDue.replaceAll(RegExp(r'\.00'), '');
+
+                    return TableRow(
+                      children: [
+                        _buildDataCell(result.workerName),
+                        _buildDataCell(totalEarnedNoDecimal),
+                        _buildDataCell(result.absentDays.toString()),
+                        _buildDataCell(result.advances.toStringAsFixed(2)),
+                        _buildDataCell(
+                          netDueNoDecimal,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.green),
+                        ),
+                      ],
+                    );
+                  }),
+                ],
               ),
             );
+            // === END OF CHANGES ===
           },
+        ),
+      ),
+    );
+  }
+
+  // دالة مساعدة لبناء خلية الرأس
+  Widget _buildHeaderCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Center(
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  // دالة مساعدة لبناء خلية البيانات
+  Widget _buildDataCell(String text, {TextStyle? style}) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Center(
+        child: Text(
+          text,
+          style: style,
+          textAlign: TextAlign.center,
         ),
       ),
     );

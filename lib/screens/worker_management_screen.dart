@@ -74,14 +74,10 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
       });
 
       // متحكمات وعقد للرصيد (الاجرة يومية)
-      _balanceControllers[worker.name] =
-          TextEditingController(text: worker.balance.toStringAsFixed(2));
+      _balanceControllers[worker.name] = TextEditingController(
+          text: worker.balance == 0.0 ? '' : worker.balance.toStringAsFixed(2));
       _balanceFocusNodes[worker.name] = FocusNode();
-      _balanceFocusNodes[worker.name]!.addListener(() {
-        if (!_balanceFocusNodes[worker.name]!.hasFocus) {
-          _saveBalanceEdit(worker.name);
-        }
-      });
+      _balanceFocusNodes[worker.name]!.addListener(() {});
     });
   }
 
@@ -133,13 +129,6 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
     await _workerIndexService.updateWorkerMobile(workerName, newMobile);
   }
 
-  Future<void> _saveBalanceEdit(String workerName) async {
-    final newBalance = double.tryParse(
-            _balanceControllers[workerName]?.text.trim() ?? '0.0') ??
-        0.0;
-    await _workerIndexService.setInitialBalance(workerName, newBalance);
-  }
-
   @override
   Widget build(BuildContext context) {
     List<MapEntry<int, WorkerData>> sortedEntries =
@@ -147,14 +136,10 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // تم التعديل: تغيير العنوان ومحاذاته لليمين
-        centerTitle: false,
-        title: Align(
-          alignment: Alignment.centerRight,
-          child: const Text('أسماء العمال وأجورهم'),
-        ),
+        title: const Text('أسماء العمال وأجورهم'),
         backgroundColor: Colors.teal[600],
         foregroundColor: Colors.white,
+        centerTitle: true,
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -182,10 +167,9 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
                       flex: 2,
                       child: Text('الاسم',
                           style: TextStyle(fontWeight: FontWeight.bold))),
-                  // تم التعديل: تغيير النص
                   Expanded(
                       flex: 2,
-                      child: Text('الاجرة اليومية',
+                      child: Text('الاجرة يومية',
                           style: TextStyle(fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center)),
                   Expanded(
@@ -209,8 +193,7 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
                   : ListView.builder(
                       itemCount: sortedEntries.length,
                       itemBuilder: (context, index) {
-                        final entry = sortedEntries[index];
-                        final worker = entry.value;
+                        final worker = sortedEntries[index].value;
 
                         return Card(
                           margin: const EdgeInsets.symmetric(
@@ -227,24 +210,46 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
                                 Expanded(
                                     flex: 2,
                                     child: _buildEditableCell(
-                                      _balanceControllers[worker.name],
-                                      _balanceFocusNodes[worker.name],
+                                      controller:
+                                          _balanceControllers[worker.name],
+                                      focusNode:
+                                          _balanceFocusNodes[worker.name],
                                       isNumeric: true,
+                                      onSubmitted: (val) {
+                                        // عند الضغط على Enter، انتقل إلى حقل الموبايل
+                                        FocusScope.of(context).requestFocus(
+                                            _mobileFocusNodes[worker.name]);
+                                      },
                                     )),
                                 Expanded(
                                     flex: 3,
                                     child: _buildEditableCell(
-                                        _mobileControllers[worker.name],
-                                        _mobileFocusNodes[worker.name],
-                                        isNumeric: true,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ])),
-                                // تم الإصلاح: التعامل الآمن مع قيمة التاريخ
+                                      controller:
+                                          _mobileControllers[worker.name],
+                                      focusNode: _mobileFocusNodes[worker.name],
+                                      isNumeric: true,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly
+                                      ],
+                                      onSubmitted: (val) {
+                                        // عند الضغط على Enter، انتقل إلى حقل الأجرة في الصف التالي (إن وجد)
+                                        if (index < sortedEntries.length - 1) {
+                                          final nextWorker =
+                                              sortedEntries[index + 1].value;
+                                          FocusScope.of(context).requestFocus(
+                                              _balanceFocusNodes[
+                                                  nextWorker.name]);
+                                        } else {
+                                          // إذا كان آخر صف، انتقل لحقل الإضافة
+                                          FocusScope.of(context)
+                                              .requestFocus(_addFocusNode);
+                                        }
+                                      },
+                                    )),
                                 Expanded(
                                     flex: 2,
                                     child: Center(
-                                        child: Text(worker.startDate ?? '',
+                                        child: Text(worker.startDate,
                                             style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.black)))),
@@ -269,9 +274,14 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
     );
   }
 
-  Widget _buildEditableCell(
-      TextEditingController? controller, FocusNode? focusNode,
-      {bool isNumeric = false, List<TextInputFormatter>? inputFormatters}) {
+  // === START OF CHANGES ===
+  Widget _buildEditableCell({
+    required TextEditingController? controller,
+    required FocusNode? focusNode,
+    bool isNumeric = false,
+    List<TextInputFormatter>? inputFormatters,
+    Function(String)? onSubmitted, // إضافة onSubmitted
+  }) {
     if (controller == null || focusNode == null) return const SizedBox.shrink();
 
     return Padding(
@@ -284,6 +294,7 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
         inputFormatters: inputFormatters,
+        onSubmitted: onSubmitted, // استخدام onSubmitted
         decoration: const InputDecoration(
           isDense: true,
           contentPadding: EdgeInsets.symmetric(vertical: 4),

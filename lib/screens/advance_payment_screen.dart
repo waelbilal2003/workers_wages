@@ -396,6 +396,7 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
         onPressed: _addNewRow,
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
     );
   }
