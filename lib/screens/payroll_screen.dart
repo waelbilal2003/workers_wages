@@ -29,6 +29,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 16, height: 1.2),
         ),
+        centerTitle: true,
         backgroundColor: Colors.purple[700],
         foregroundColor: Colors.white,
       ),

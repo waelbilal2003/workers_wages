@@ -159,6 +159,9 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 16, height: 1.2),
         ),
+        // === START OF CHANGES ===
+        centerTitle: true, // تم إضافة هذه الخاصية
+        // === END OF CHANGES ===
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
         actions: [

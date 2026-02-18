@@ -321,6 +321,7 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // === START OF CHANGES ===
         title: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: _showFullScreenSuggestions
@@ -333,15 +334,19 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
                   onClose: _hideSuggestions,
                 )
               : Text(
-                  'دفعة على الحساب - تاريخ ${widget.selectedDate}',
+                  // تم التعديل هنا
+                  'دفعة على الحساب\nبتاريخ ${widget.selectedDate}',
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
+                      fontWeight: FontWeight.bold, fontSize: 16, height: 1.2),
                 ),
         ),
-        centerTitle: false,
+        centerTitle: true, // تم التعديل هنا
+        // === END OF CHANGES ===
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
         actions: [
+          // ... (الأزرار كما هي)
           IconButton(
             icon: const Icon(Icons.people),
             tooltip: 'فهرس العمال',
@@ -350,7 +355,6 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
                 MaterialPageRoute(
                     builder: (context) => const WorkerManagementScreen()),
               );
-              // إعادة تحميل اليومية بعد الرجوع من شاشة الفهرس لاحتمال تغيير اسم
               _loadOrCreatePayments();
             },
           ),
