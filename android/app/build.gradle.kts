@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "sy.worker_wages.syrian_arab"
+    namespace = "sy.workers_wages.syrian_arab"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,7 +32,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "sy.worker_wages.syrian_arab"
+        applicationId = "sy.workers_wages.syrian_arab"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         

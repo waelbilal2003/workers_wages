@@ -167,8 +167,6 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
                 focusNode: _addFocusNode,
                 decoration: InputDecoration(
                   labelText: 'إضافة عامل جديد',
-                  suffixIcon: IconButton(
-                      icon: const Icon(Icons.add), onPressed: _addNewWorker),
                   border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _addNewWorker(),
