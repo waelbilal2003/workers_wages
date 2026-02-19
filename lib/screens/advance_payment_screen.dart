@@ -185,7 +185,6 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
     });
   }
 
-  // تم التعديل: إعادة منطق حساب الرصيد الدقيق عند الحفظ
   Future<void> _saveCurrentRecord({bool silent = false}) async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
