@@ -8,12 +8,14 @@ class WorkerData {
   double balance;
   String mobile;
   String startDate;
+  String currency;
 
   WorkerData({
     required this.name,
     this.balance = 0.0,
     this.mobile = '',
     required this.startDate,
+    this.currency = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -21,25 +23,22 @@ class WorkerData {
         'balance': balance,
         'mobile': mobile,
         'startDate': startDate,
+        'currency': currency,
       };
 
   factory WorkerData.fromJson(dynamic json) {
-    // تم الإصلاح: التعامل الآمن مع البيانات القديمة التي قد لا تحتوي على كل الحقول
     final now = DateTime.now();
     final defaultDate = '${now.year}/${now.month}/${now.day}';
 
     if (json is String) {
-      return WorkerData(
-        name: json,
-        startDate: defaultDate,
-      );
+      return WorkerData(name: json, startDate: defaultDate);
     }
     return WorkerData(
       name: json['name'] ?? '',
       balance: (json['balance'] ?? 0.0).toDouble(),
       mobile: json['mobile'] ?? '',
-      // إذا كان تاريخ البدء غير موجود (null)، يتم وضع تاريخ اليوم كقيمة افتراضية
       startDate: json['startDate'] ?? defaultDate,
+      currency: json['currency'] ?? '',
     );
   }
 }
@@ -212,6 +211,18 @@ class WorkerIndexService {
       if (_workerMap[keyToRemove]?.balance == 0.0) {
         _workerMap.remove(keyToRemove);
         await _saveToFile();
+      }
+    }
+  }
+
+  Future<void> updateWorkerCurrency(String workerName, String currency) async {
+    await _ensureInitialized();
+    final normalized = workerName.trim().toLowerCase();
+    for (var entry in _workerMap.entries) {
+      if (entry.value.name.toLowerCase() == normalized) {
+        entry.value.currency = currency;
+        await _saveToFile();
+        return;
       }
     }
   }

@@ -9,11 +9,12 @@ import 'package:path_provider/path_provider.dart';
 // نموذج لتخزين نتائج الحساب لعامل واحد
 class PayrollResult {
   final String workerName;
-  final int presentDays; // أيام الحضور بدلاً من مجموع الأجرة
+  final int presentDays;
   final int absentDays;
   final double advances;
-  final double netDue; // رقم فقط للطرح
-  final String wageUnit; // الوحدة منفصلة للعرض في الاستحقاق
+  final double netDue;
+  final String wageUnit;
+  final String currency;
 
   PayrollResult({
     required this.workerName,
@@ -22,6 +23,7 @@ class PayrollResult {
     required this.advances,
     required this.netDue,
     required this.wageUnit,
+    required this.currency,
   });
 }
 
@@ -119,6 +121,7 @@ class PayrollService {
         advances: totalAdvances,
         netDue: netDueValue,
         wageUnit: latestWageUnit,
+        currency: workerData.currency, // إضافة العملة من بيانات العامل
       ));
     }
 

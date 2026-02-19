@@ -21,7 +21,8 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
   Map<String, FocusNode> _mobileFocusNodes = {};
   Map<String, TextEditingController> _balanceControllers = {};
   Map<String, FocusNode> _balanceFocusNodes = {};
-
+  Map<String, TextEditingController> _currencyControllers = {};
+  Map<String, FocusNode> _currencyFocusNodes = {};
   @override
   void initState() {
     super.initState();
@@ -36,6 +37,8 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
     _mobileFocusNodes.values.forEach((n) => n.dispose());
     _balanceControllers.values.forEach((c) => c.dispose());
     _balanceFocusNodes.values.forEach((n) => n.dispose());
+    _currencyControllers.values.forEach((c) => c.dispose());
+    _currencyFocusNodes.values.forEach((n) => n.dispose());
     super.dispose();
   }
 
@@ -68,6 +71,16 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
       _mobileFocusNodes[worker.name]!.addListener(() {
         if (!_mobileFocusNodes[worker.name]!.hasFocus) {
           _saveMobileEdit(worker.name);
+        }
+      });
+
+      // متحكمات وعقد للعملة
+      _currencyControllers[worker.name] =
+          TextEditingController(text: worker.currency);
+      _currencyFocusNodes[worker.name] = FocusNode();
+      _currencyFocusNodes[worker.name]!.addListener(() {
+        if (!_currencyFocusNodes[worker.name]!.hasFocus) {
+          _saveCurrencyEdit(worker.name);
         }
       });
 
@@ -139,6 +152,11 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
     await _workerIndexService.setInitialBalance(workerName, newBalance);
   }
 
+  Future<void> _saveCurrencyEdit(String workerName) async {
+    final text = _currencyControllers[workerName]?.text.trim() ?? '';
+    await _workerIndexService.updateWorkerCurrency(workerName, text);
+  }
+
   @override
   Widget build(BuildContext context) {
     List<MapEntry<int, WorkerData>> sortedEntries =
@@ -169,34 +187,44 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
             ),
             // رأس الجدول
             Container(
-              color: Colors.grey[200],
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: Colors.grey[300],
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: Row(
                 children: const [
                   Expanded(
                       flex: 2,
                       child: Text('الاسم',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 11))),
                   Expanded(
                       flex: 2,
-                      child: Text('الاجرة يومية',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text('الاجرة',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 11),
+                          textAlign: TextAlign.center)),
+                  Expanded(
+                      flex: 2,
+                      child: Text('العملة',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 11),
                           textAlign: TextAlign.center)),
                   Expanded(
                       flex: 3,
                       child: Text('الموبايل',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 11),
                           textAlign: TextAlign.center)),
                   Expanded(
                       flex: 2,
                       child: Text('تاريخ البدء',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 11),
                           textAlign: TextAlign.center)),
-                  SizedBox(width: 24),
+                  SizedBox(width: 30),
                 ],
               ),
             ),
-            // قائمة العمال
+// قائمة العمال
             Expanded(
               child: sortedEntries.isEmpty
                   ? const Center(child: Text('لا يوجد عمال مسجلين.'))
@@ -204,75 +232,82 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
                       itemCount: sortedEntries.length,
                       itemBuilder: (context, index) {
                         final worker = sortedEntries[index].value;
+                        final isEven = index % 2 == 0;
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          child: Padding(
-                            padding: const EdgeInsets.all(2.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                    flex: 2,
-                                    child: Text(worker.name,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold))),
-                                Expanded(
-                                    flex: 2,
-                                    child: _buildEditableCell(
-                                      controller:
-                                          _balanceControllers[worker.name],
-                                      focusNode:
-                                          _balanceFocusNodes[worker.name],
-                                      isNumeric: true,
-                                      onSubmitted: (val) {
-                                        // عند الضغط على Enter، انتقل إلى حقل الموبايل
+                        return Container(
+                          color: isEven ? Colors.white : Colors.grey[50],
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  flex: 2,
+                                  child: Text(worker.name,
+                                      style: const TextStyle(fontSize: 13))),
+                              Expanded(
+                                  flex: 2,
+                                  child: _buildEditableCell(
+                                    controller:
+                                        _balanceControllers[worker.name],
+                                    focusNode: _balanceFocusNodes[worker.name],
+                                    isNumeric: true,
+                                    onSubmitted: (val) {
+                                      FocusScope.of(context).requestFocus(
+                                          _currencyFocusNodes[worker.name]);
+                                    },
+                                  )),
+                              Expanded(
+                                  flex: 2,
+                                  child: _buildEditableCell(
+                                    controller:
+                                        _currencyControllers[worker.name],
+                                    focusNode: _currencyFocusNodes[worker.name],
+                                    isNumeric: false,
+                                    onSubmitted: (val) {
+                                      FocusScope.of(context).requestFocus(
+                                          _mobileFocusNodes[worker.name]);
+                                    },
+                                  )),
+                              Expanded(
+                                  flex: 3,
+                                  child: _buildEditableCell(
+                                    controller: _mobileControllers[worker.name],
+                                    focusNode: _mobileFocusNodes[worker.name],
+                                    isNumeric: true,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly
+                                    ],
+                                    onSubmitted: (val) {
+                                      if (index < sortedEntries.length - 1) {
+                                        final nextWorker =
+                                            sortedEntries[index + 1].value;
                                         FocusScope.of(context).requestFocus(
-                                            _mobileFocusNodes[worker.name]);
-                                      },
-                                    )),
-                                Expanded(
-                                    flex: 3,
-                                    child: _buildEditableCell(
-                                      controller:
-                                          _mobileControllers[worker.name],
-                                      focusNode: _mobileFocusNodes[worker.name],
-                                      isNumeric: true,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ],
-                                      onSubmitted: (val) {
-                                        // عند الضغط على Enter، انتقل إلى حقل الأجرة في الصف التالي (إن وجد)
-                                        if (index < sortedEntries.length - 1) {
-                                          final nextWorker =
-                                              sortedEntries[index + 1].value;
-                                          FocusScope.of(context).requestFocus(
-                                              _balanceFocusNodes[
-                                                  nextWorker.name]);
-                                        } else {
-                                          // إذا كان آخر صف، انتقل لحقل الإضافة
-                                          FocusScope.of(context)
-                                              .requestFocus(_addFocusNode);
-                                        }
-                                      },
-                                    )),
-                                Expanded(
-                                    flex: 2,
-                                    child: Center(
-                                        child: Text(worker.startDate,
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.black)))),
-                                SizedBox(
-                                  width: 24,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Colors.red),
-                                    onPressed: () => _deleteWorker(worker),
-                                  ),
+                                            _balanceFocusNodes[
+                                                nextWorker.name]);
+                                      } else {
+                                        FocusScope.of(context)
+                                            .requestFocus(_addFocusNode);
+                                      }
+                                    },
+                                  )),
+                              Expanded(
+                                  flex: 2,
+                                  child: Center(
+                                      child: Text(worker.startDate,
+                                          style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.black)))),
+                              SizedBox(
+                                width: 30,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  iconSize: 18,
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () => _deleteWorker(worker),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -284,30 +319,30 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
     );
   }
 
-  // === START OF CHANGES ===
   Widget _buildEditableCell({
     required TextEditingController? controller,
     required FocusNode? focusNode,
     bool isNumeric = false,
     List<TextInputFormatter>? inputFormatters,
-    Function(String)? onSubmitted, // إضافة onSubmitted
+    Function(String)? onSubmitted,
   }) {
     if (controller == null || focusNode == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
       child: TextField(
         controller: controller,
         focusNode: focusNode,
         textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 13),
         keyboardType: isNumeric
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
         inputFormatters: inputFormatters,
-        onSubmitted: onSubmitted, // استخدام onSubmitted
+        onSubmitted: onSubmitted,
         decoration: const InputDecoration(
           isDense: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          contentPadding: EdgeInsets.symmetric(vertical: 2),
           border: UnderlineInputBorder(),
         ),
       ),

@@ -94,9 +94,11 @@ class _PayrollScreenState extends State<PayrollScreen> {
                     final netDueFormatted = result.netDue
                         .toStringAsFixed(2)
                         .replaceAll(RegExp(r'\.00$'), '');
-                    final netDueDisplay = result.wageUnit.isNotEmpty
-                        ? '$netDueFormatted ${result.wageUnit}'
-                        : netDueFormatted;
+                    final netDueDisplay = [
+                      netDueFormatted,
+                      if (result.wageUnit.isNotEmpty) result.wageUnit,
+                      if (result.currency.isNotEmpty) result.currency,
+                    ].join(' ');
 
                     final advancesFormatted = result.advances
                         .toStringAsFixed(2)
