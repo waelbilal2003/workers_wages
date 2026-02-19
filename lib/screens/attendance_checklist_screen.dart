@@ -1,4 +1,3 @@
-// lib/screens/attendance_checklist_screen.dart
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/attendance_model.dart';
@@ -70,7 +69,6 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
       _statusValues.clear();
 
       allWorkers.values.forEach((worker) {
-        // === START OF FIX ===
         // البحث عن السجل المحفوظ للعامل الحالي
         final savedRecord = document?.records.firstWhere(
           (r) => r.workerName == worker.name,
@@ -82,7 +80,6 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
         // التحقق مما إذا كان السجل موجوداً حقاً
         final bool recordFound =
             savedRecord != null && savedRecord.workerName.isNotEmpty;
-        // === END OF FIX ===
 
         _workerNames.add(worker.name);
 
@@ -159,25 +156,9 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      // إضافة تحذير عند الخروج بوجود تغييرات غير محفوظة
       onWillPop: () async {
-        if (_hasUnsavedChanges) {
-          final shouldPop = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('تغييرات غير محفوظة'),
-              content: const Text('هل تريد الخروج بدون حفظ؟'),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('البقاء')),
-                TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('خروج')),
-              ],
-            ),
-          );
-          return shouldPop ?? false;
+        if (_hasUnsavedChanges && !_isSaving) {
+          await _saveChecklist();
         }
         return true;
       },

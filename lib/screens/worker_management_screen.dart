@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import '../services/worker_index_service.dart';
 
 class WorkerManagementScreen extends StatefulWidget {
-  const WorkerManagementScreen({super.key});
-
+  final String? selectedDate;
+  const WorkerManagementScreen({super.key, this.selectedDate});
   @override
   State<WorkerManagementScreen> createState() => _WorkerManagementScreenState();
 }
@@ -84,7 +84,9 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
   Future<void> _addNewWorker() async {
     final name = _addController.text.trim();
     if (name.isNotEmpty) {
-      await _workerIndexService.saveWorker(name);
+      // استخدم التاريخ المُمرَّر أو اترك الـ service يتعامل معه
+      await _workerIndexService.saveWorker(name,
+          startDate: widget.selectedDate);
       _addController.clear();
       _addFocusNode.unfocus();
       await _loadWorkers();

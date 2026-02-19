@@ -47,18 +47,14 @@ class PayrollService {
 
     final List<PayrollResult> results = [];
     final selectedDate = DateFormat('yyyy/M/d').parse(selectedDateStr);
-
-    // تحديد نطاق الحساب: من بداية الشهر الحالي حتى التاريخ المحدد
     final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
 
     for (var workerData in workersData.values) {
-      int presentDays = 0;
       int absentDays = 0;
       double totalAdvances = 0.0;
+      double totalEarnedValue = 0.0;
       String latestWageUnit = '';
-      double latestWageValue = 0.0;
 
-      // تكرار على كل يوم في نطاق الشهر
       for (int i = 0;
           i <= selectedDate.difference(firstDayOfMonth).inDays;
           i++) {
@@ -66,20 +62,22 @@ class PayrollService {
         final dateString =
             '${currentDate.year}/${currentDate.month}/${currentDate.day}';
 
-        // 1. حساب الحضور والغياب والأجرة
+        // 1. حساب الحضور والغياب والأجرة - جمع كل السطور لنفس العامل
         final attendanceDoc =
             await _attendanceService.loadAttendanceDocumentForDate(dateString);
         if (attendanceDoc != null) {
-          final workerRecord = attendanceDoc.records
+          // جمع كل سطور العامل في نفس اليوم
+          final workerRecords = attendanceDoc.records
               .where((r) => r.workerName == workerData.name)
-              .firstOrNull;
-          if (workerRecord != null) {
-            if (workerRecord.status == 'موجود') {
-              presentDays++;
-              // تحديث الأجرة بآخر قيمة مسجلة
-              final parsedWage = _parseWage(workerRecord.wageDescription);
-              latestWageValue = parsedWage['value'];
-              latestWageUnit = parsedWage['unit'];
+              .toList();
+
+          for (var record in workerRecords) {
+            if (record.status == 'موجود') {
+              final parsedWage = _parseWage(record.wageDescription);
+              totalEarnedValue += parsedWage['value'];
+              if (parsedWage['unit'].isNotEmpty) {
+                latestWageUnit = parsedWage['unit'];
+              }
             } else {
               absentDays++;
             }
@@ -98,8 +96,7 @@ class PayrollService {
         }
       }
 
-      // 3. حساب النتائج النهائية للعامل الحالي
-      final totalEarnedValue = presentDays * latestWageValue;
+      // 3. حساب النتائج النهائية
       final netDueValue = totalEarnedValue - totalAdvances;
 
       results.add(PayrollResult(

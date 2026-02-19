@@ -58,6 +58,10 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
 
   @override
   void dispose() {
+    // حفظ تلقائي عند الخروج بدون انتظار
+    if (_hasUnsavedChanges && !_isSaving) {
+      _saveCurrentRecord(silent: true);
+    }
     for (var row in rowControllers) {
       for (var controller in row) {
         controller.dispose();
@@ -240,12 +244,6 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
     final success = await _storageService.savePaymentDocument(documentToSave);
 
     if (success) {
-      // تطبيق التغييرات الصافية على أرصدة العمال
-      for (var entry in balanceChanges.entries) {
-        if (entry.value != 0) {
-          await _workerIndexService.updateWorkerBalance(entry.key, entry.value);
-        }
-      }
       // حفظ أي عامل جديد للفهرس
       for (var trans in newTransactions) {
         if (trans.workerName.isNotEmpty) {
@@ -319,84 +317,90 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // === START OF CHANGES ===
-        title: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _showFullScreenSuggestions
-              ? SuggestionsBanner(
-                  suggestions: _workerSuggestions,
-                  type: 'supplier',
-                  currentRowIndex: _activeWorkerRowIndex ?? 0,
-                  scrollController: _suggestionsScrollController,
-                  onSelect: _selectWorkerSuggestion,
-                  onClose: _hideSuggestions,
-                )
-              : Text(
-                  // تم التعديل هنا
-                  'دفعة على الحساب\nبتاريخ ${widget.selectedDate}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16, height: 1.2),
-                ),
-        ),
-        centerTitle: true, // تم التعديل هنا
-        // === END OF CHANGES ===
-        backgroundColor: Colors.blue[700],
-        foregroundColor: Colors.white,
-        actions: [
-          // ... (الأزرار كما هي)
-          IconButton(
-            icon: const Icon(Icons.people),
-            tooltip: 'فهرس العمال',
-            onPressed: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (context) => const WorkerManagementScreen()),
-              );
-              _loadOrCreatePayments();
-            },
-          ),
-          IconButton(
-            icon: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white)))
-                : Stack(
-                    children: [
-                      const Icon(Icons.save),
-                      if (_hasUnsavedChanges)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(6)),
-                            constraints: const BoxConstraints(
-                                minWidth: 12, minHeight: 12),
-                            child: const SizedBox(width: 8, height: 8),
-                          ),
-                        ),
-                    ],
+    return WillPopScope(
+      onWillPop: () async {
+        if (_hasUnsavedChanges && !_isSaving) {
+          await _saveCurrentRecord(silent: true);
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _showFullScreenSuggestions
+                ? SuggestionsBanner(
+                    suggestions: _workerSuggestions,
+                    type: 'supplier',
+                    currentRowIndex: _activeWorkerRowIndex ?? 0,
+                    scrollController: _suggestionsScrollController,
+                    onSelect: _selectWorkerSuggestion,
+                    onClose: _hideSuggestions,
+                  )
+                : Text(
+                    'دفعة على الحساب\nبتاريخ ${widget.selectedDate}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16, height: 1.2),
                   ),
-            tooltip: 'حفظ',
-            onPressed: _isSaving ? null : () => _saveCurrentRecord(),
           ),
-        ],
-      ),
-      body: _buildTableWithStickyHeader(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addNewRow,
-        backgroundColor: Colors.blue[700],
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+          centerTitle: true,
+          backgroundColor: Colors.blue[700],
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.people),
+              tooltip: 'فهرس العمال',
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => WorkerManagementScreen(
+                          selectedDate:
+                              widget.selectedDate)), // أضف selectedDate
+                );
+                _loadOrCreatePayments();
+              },
+            ),
+            IconButton(
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white)))
+                  : Stack(
+                      children: [
+                        const Icon(Icons.save),
+                        if (_hasUnsavedChanges)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(6)),
+                              constraints: const BoxConstraints(
+                                  minWidth: 12, minHeight: 12),
+                              child: const SizedBox(width: 8, height: 8),
+                            ),
+                          ),
+                      ],
+                    ),
+              tooltip: 'حفظ',
+              onPressed: _isSaving ? null : () => _saveCurrentRecord(),
+            ),
+          ],
+        ),
+        body: _buildTableWithStickyHeader(),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _addNewRow,
+          backgroundColor: Colors.blue[700],
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

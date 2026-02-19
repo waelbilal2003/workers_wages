@@ -118,18 +118,24 @@ class WorkerIndexService {
     }
   }
 
-  Future<void> saveWorker(String workerName) async {
+  Future<void> saveWorker(String workerName, {String? startDate}) async {
     await _ensureInitialized();
     if (workerName.trim().isEmpty) return;
 
     if (!_workerMap.values
         .any((w) => w.name.toLowerCase() == workerName.trim().toLowerCase())) {
-      final now = DateTime.now();
-      final formattedDate = '${now.year}/${now.month}/${now.day}';
+      // استخدم التاريخ المُمرَّر إن وُجد، وإلا استخدم تاريخ اليوم كاحتياط
+      String dateToSave;
+      if (startDate != null && startDate.isNotEmpty) {
+        dateToSave = startDate;
+      } else {
+        final now = DateTime.now();
+        dateToSave = '${now.year}/${now.month}/${now.day}';
+      }
 
       _workerMap[_nextId] = WorkerData(
         name: workerName.trim(),
-        startDate: formattedDate,
+        startDate: dateToSave,
       );
       _nextId++;
       await _saveToFile();

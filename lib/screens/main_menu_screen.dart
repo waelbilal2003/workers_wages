@@ -30,12 +30,13 @@ class MainMenuScreen extends StatelessWidget {
                 context: context,
                 text: 'ادخال الاسماء',
                 icon: Icons.person_add_alt_1,
-                color: Colors.teal[600]!, // لون شاشة إدارة العمال
+                color: Colors.teal[600]!,
                 onPressed: () {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const WorkerManagementScreen()));
+                          builder: (_) => WorkerManagementScreen(
+                              selectedDate: selectedDate))); // أضف selectedDate
                 },
               ),
               const SizedBox(height: 20),
