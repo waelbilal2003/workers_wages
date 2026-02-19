@@ -73,7 +73,7 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
 
         _workerNames.add(worker.name);
 
-        _statusValues.add(recordFound ? savedRecord.status : 'موجود');
+        _statusValues.add(recordFound ? savedRecord.status : 'غائب');
       });
       _hasUnsavedChanges = false;
     });
@@ -110,34 +110,10 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
   }
 
   void _showStatusDialog(int index) {
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-              title: const Text('اختر الحالة'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                      title: const Text('موجود'),
-                      onTap: () {
-                        setState(() {
-                          _statusValues[index] = 'موجود';
-                          _hasUnsavedChanges = true; // <-- الإصلاح: تفعيل الحفظ
-                        });
-                        Navigator.pop(context);
-                      }),
-                  ListTile(
-                      title: const Text('غائب'),
-                      onTap: () {
-                        setState(() {
-                          _statusValues[index] = 'غائب';
-                          _hasUnsavedChanges = true; // <-- الإصلاح: تفعيل الحفظ
-                        });
-                        Navigator.pop(context);
-                      }),
-                ],
-              ),
-            ));
+    setState(() {
+      _statusValues[index] = _statusValues[index] == 'موجود' ? 'غائب' : 'موجود';
+      _hasUnsavedChanges = true;
+    });
   }
 
   @override

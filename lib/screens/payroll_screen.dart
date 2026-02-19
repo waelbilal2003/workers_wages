@@ -1,4 +1,3 @@
-// lib/screens/payroll_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/payroll_service.dart';
@@ -64,7 +63,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
             }
 
             final results = snapshot.data!;
-            // === START OF CHANGES: Replacing DataTable with Table ===
+
             return SingleChildScrollView(
               child: Table(
                 border: TableBorder.all(color: Colors.grey.shade300),
@@ -91,21 +90,40 @@ class _PayrollScreenState extends State<PayrollScreen> {
                   ),
                   // صفوف البيانات
                   ...results.map((result) {
-                    final totalEarnedNoDecimal =
-                        result.totalEarned.replaceAll(RegExp(r'\.00'), '');
-                    final netDueNoDecimal =
-                        result.netDue.replaceAll(RegExp(r'\.00'), '');
+                    // الاستحقاق: إزالة الأصفار الزائدة + إضافة الوحدة
+                    final netDueFormatted = result.netDue
+                        .toStringAsFixed(2)
+                        .replaceAll(RegExp(r'\.00$'), '');
+                    final netDueDisplay = result.wageUnit.isNotEmpty
+                        ? '$netDueFormatted ${result.wageUnit}'
+                        : netDueFormatted;
+
+                    final advancesFormatted = result.advances
+                        .toStringAsFixed(2)
+                        .replaceAll(RegExp(r'\.00$'), '');
 
                     return TableRow(
                       children: [
                         _buildDataCell(result.workerName),
-                        _buildDataCell(totalEarnedNoDecimal),
+                        _buildDataCell(result.presentDays.toString()),
                         _buildDataCell(result.absentDays.toString()),
-                        _buildDataCell(result.advances.toStringAsFixed(2)),
-                        _buildDataCell(
-                          netDueNoDecimal,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, color: Colors.green),
+                        _buildDataCell(advancesFormatted),
+                        GestureDetector(
+                          onTap: () => _showCollectDialog(context, result),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Center(
+                              child: Text(
+                                netDueDisplay,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                  decoration: TextDecoration.underline,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     );
@@ -113,7 +131,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 ],
               ),
             );
-            // === END OF CHANGES ===
           },
         ),
       ),
@@ -146,5 +163,51 @@ class _PayrollScreenState extends State<PayrollScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showCollectDialog(
+      BuildContext context, PayrollResult result) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'قبض العامل ${result.workerName} ؟',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('لا',
+                style: TextStyle(color: Colors.red, fontSize: 16)),
+          ),
+          const SizedBox(width: 40),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('نعم',
+                style: TextStyle(color: Colors.green, fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      // حفظ تاريخ القبض فقط - بدون أي حذف للسجلات
+      await _payrollService.saveCollectionDate(
+          result.workerName, widget.selectedDate);
+
+      setState(() {
+        _payrollFuture = _payrollService.calculatePayroll(widget.selectedDate);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تسجيل قبض العامل ${result.workerName}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
   }
 }

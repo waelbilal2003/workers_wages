@@ -2,21 +2,26 @@ import 'package:intl/intl.dart';
 import 'worker_index_service.dart';
 import 'attendance_storage_service.dart';
 import 'payment_storage_service.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 // نموذج لتخزين نتائج الحساب لعامل واحد
 class PayrollResult {
   final String workerName;
-  final String totalEarned; // e.g. "21 دولار"
+  final int presentDays; // أيام الحضور بدلاً من مجموع الأجرة
   final int absentDays;
   final double advances;
-  final String netDue; // e.g. "11 دولار"
+  final double netDue; // رقم فقط للطرح
+  final String wageUnit; // الوحدة منفصلة للعرض في الاستحقاق
 
   PayrollResult({
     required this.workerName,
-    required this.totalEarned,
+    required this.presentDays,
     required this.absentDays,
     required this.advances,
     required this.netDue,
+    required this.wageUnit,
   });
 }
 
@@ -48,31 +53,41 @@ class PayrollService {
     final List<PayrollResult> results = [];
     final selectedDate = DateFormat('yyyy/M/d').parse(selectedDateStr);
     final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
+    final collectionDates = await _loadCollectionDates();
 
     for (var workerData in workersData.values) {
       int absentDays = 0;
+      int presentDays = 0;
       double totalAdvances = 0.0;
       double totalEarnedValue = 0.0;
       String latestWageUnit = '';
 
-      for (int i = 0;
-          i <= selectedDate.difference(firstDayOfMonth).inDays;
-          i++) {
-        final currentDate = firstDayOfMonth.add(Duration(days: i));
+      // تحديد تاريخ البداية: آخر قبض أو بداية الشهر
+      DateTime startDate = firstDayOfMonth;
+      if (collectionDates.containsKey(workerData.name)) {
+        try {
+          final collectionDate =
+              DateFormat('yyyy/M/d').parse(collectionDates[workerData.name]!);
+          // نبدأ من اليوم التالي لتاريخ القبض
+          startDate = collectionDate.add(const Duration(days: 1));
+        } catch (_) {}
+      }
+
+      for (int i = 0; i <= selectedDate.difference(startDate).inDays; i++) {
+        final currentDate = startDate.add(Duration(days: i));
         final dateString =
             '${currentDate.year}/${currentDate.month}/${currentDate.day}';
 
-        // 1. حساب الحضور والغياب والأجرة - جمع كل السطور لنفس العامل
         final attendanceDoc =
             await _attendanceService.loadAttendanceDocumentForDate(dateString);
         if (attendanceDoc != null) {
-          // جمع كل سطور العامل في نفس اليوم
           final workerRecords = attendanceDoc.records
               .where((r) => r.workerName == workerData.name)
               .toList();
 
           for (var record in workerRecords) {
             if (record.status == 'موجود') {
+              presentDays++;
               final parsedWage = _parseWage(record.wageDescription);
               totalEarnedValue += parsedWage['value'];
               if (parsedWage['unit'].isNotEmpty) {
@@ -84,7 +99,6 @@ class PayrollService {
           }
         }
 
-        // 2. حساب الدفعات
         final paymentDoc =
             await _paymentService.loadPaymentDocumentForDate(dateString);
         if (paymentDoc != null) {
@@ -96,19 +110,43 @@ class PayrollService {
         }
       }
 
-      // 3. حساب النتائج النهائية
       final netDueValue = totalEarnedValue - totalAdvances;
 
       results.add(PayrollResult(
         workerName: workerData.name,
-        totalEarned:
-            '${totalEarnedValue.toStringAsFixed(2)} $latestWageUnit'.trim(),
+        presentDays: presentDays,
         absentDays: absentDays,
         advances: totalAdvances,
-        netDue: '${netDueValue.toStringAsFixed(2)} $latestWageUnit'.trim(),
+        netDue: netDueValue,
+        wageUnit: latestWageUnit,
       ));
     }
 
     return results;
+  }
+
+  Future<String> _getCollectionFilePath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/worker_collection_dates.json';
+  }
+
+  Future<Map<String, String>> _loadCollectionDates() async {
+    try {
+      final file = File(await _getCollectionFilePath());
+      if (await file.exists()) {
+        final Map<String, dynamic> json = jsonDecode(await file.readAsString());
+        return json.map((k, v) => MapEntry(k, v.toString()));
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  Future<void> saveCollectionDate(String workerName, String date) async {
+    try {
+      final dates = await _loadCollectionDates();
+      dates[workerName] = date;
+      final file = File(await _getCollectionFilePath());
+      await file.writeAsString(jsonEncode(dates));
+    } catch (_) {}
   }
 }
