@@ -50,7 +50,6 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
   }
 
   void _initializeControllersAndNodes() {
-    // تنظيف الموارد القديمة قبل إعادة التهيئة
     _mobileControllers.values.forEach((c) => c.dispose());
     _mobileFocusNodes.values.forEach((n) => n.dispose());
     _balanceControllers.values.forEach((c) => c.dispose());
@@ -61,7 +60,6 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
     _balanceControllers.clear();
     _balanceFocusNodes.clear();
 
-    // إعادة بناء المتحكمات والعُقد
     _workersData.forEach((key, worker) {
       // متحكمات وعقد للموبايل
       _mobileControllers[worker.name] =
@@ -73,11 +71,15 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
         }
       });
 
-      // متحكمات وعقد للرصيد (الاجرة يومية)
+      // متحكمات وعقد للأجرة اليومية - بنفس آلية الموبايل
       _balanceControllers[worker.name] = TextEditingController(
           text: worker.balance == 0.0 ? '' : worker.balance.toStringAsFixed(2));
       _balanceFocusNodes[worker.name] = FocusNode();
-      _balanceFocusNodes[worker.name]!.addListener(() {});
+      _balanceFocusNodes[worker.name]!.addListener(() {
+        if (!_balanceFocusNodes[worker.name]!.hasFocus) {
+          _saveBalanceEdit(worker.name);
+        }
+      });
     });
   }
 
@@ -129,6 +131,12 @@ class _WorkerManagementScreenState extends State<WorkerManagementScreen> {
   Future<void> _saveMobileEdit(String workerName) async {
     final newMobile = _mobileControllers[workerName]?.text.trim() ?? '';
     await _workerIndexService.updateWorkerMobile(workerName, newMobile);
+  }
+
+  Future<void> _saveBalanceEdit(String workerName) async {
+    final text = _balanceControllers[workerName]?.text.trim() ?? '';
+    final newBalance = double.tryParse(text) ?? 0.0;
+    await _workerIndexService.setInitialBalance(workerName, newBalance);
   }
 
   @override

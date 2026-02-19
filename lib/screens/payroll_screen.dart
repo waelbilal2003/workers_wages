@@ -83,10 +83,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
                         BoxDecoration(color: Colors.purple.withOpacity(0.1)),
                     children: [
                       _buildHeaderCell('العامل'),
-                      _buildHeaderCell('مجموع الأجرة'),
+                      _buildHeaderCell('أيام الحضور'),
                       _buildHeaderCell('أيام الغياب'),
-                      _buildHeaderCell('دفعة من الحساب'),
-                      _buildHeaderCell('الاستحقاق'),
+                      _buildHeaderCell('دفعة على الحساب'),
+                      _buildHeaderCell('الإستحقاق'),
                     ],
                   ),
                   // صفوف البيانات

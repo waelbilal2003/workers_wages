@@ -20,8 +20,7 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
   final WorkerIndexService _workerIndexService = WorkerIndexService();
 
   List<String> _workerNames = [];
-  List<TextEditingController> _wageControllers = [];
-  List<FocusNode> _wageFocusNodes = [];
+
   List<String> _statusValues = [];
 
   bool _isSaving = false;
@@ -37,12 +36,6 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
 
   @override
   void dispose() {
-    for (var c in _wageControllers) {
-      c.dispose();
-    }
-    for (var n in _wageFocusNodes) {
-      n.dispose();
-    }
     super.dispose();
   }
 
@@ -62,10 +55,7 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
     setState(() {
       // تنظيف الموارد القديمة
       _workerNames.clear();
-      _wageControllers.forEach((c) => c.dispose());
-      _wageControllers.clear();
-      _wageFocusNodes.forEach((n) => n.dispose());
-      _wageFocusNodes.clear();
+
       _statusValues.clear();
 
       allWorkers.values.forEach((worker) {
@@ -83,9 +73,6 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
 
         _workerNames.add(worker.name);
 
-        _wageControllers.add(TextEditingController(
-            text: recordFound ? savedRecord.wageDescription : ''));
-        _wageFocusNodes.add(FocusNode());
         _statusValues.add(recordFound ? savedRecord.status : 'موجود');
       });
       _hasUnsavedChanges = false;
@@ -100,7 +87,7 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
     for (int i = 0; i < _workerNames.length; i++) {
       records.add(AttendanceRecord(
         workerName: _workerNames[i],
-        wageDescription: _wageControllers[i].text.trim(),
+        wageDescription: '',
         status: _statusValues[i],
       ));
     }
@@ -236,16 +223,11 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
       child: Row(
         children: const [
           Expanded(
-              flex: 3,
+              flex: 1,
               child: Text('العامل',
                   style: TextStyle(fontWeight: FontWeight.bold))),
           Expanded(
-              flex: 2,
-              child: Text('الأجرة اليومية',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center)),
-          Expanded(
-              flex: 2,
+              flex: 1,
               child: Text('الحالة',
                   style: TextStyle(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center)),
@@ -263,39 +245,11 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-                flex: 3,
+                flex: 1,
                 child: Text(_workerNames[index],
                     style: const TextStyle(fontWeight: FontWeight.w500))),
-            const SizedBox(width: 8),
             Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _wageControllers[index],
-                  focusNode: _wageFocusNodes[index],
-                  textAlign: TextAlign.center,
-                  decoration:
-                      const InputDecoration.collapsed(hintText: 'ادخل الأجرة'),
-                  onChanged: (val) {
-                    // <-- الإصلاح: تفعيل الحفظ
-                    if (!_hasUnsavedChanges) {
-                      setState(() {
-                        _hasUnsavedChanges = true;
-                      });
-                    }
-                  },
-                  onSubmitted: (val) {
-                    if (index < _wageFocusNodes.length - 1) {
-                      FocusScope.of(context)
-                          .requestFocus(_wageFocusNodes[index + 1]);
-                    } else {
-                      FocusScope.of(context).unfocus();
-                      _saveChecklist();
-                    }
-                  },
-                )),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 2,
+              flex: 1,
               child: InkWell(
                 onTap: () => _showStatusDialog(index),
                 child: Container(
