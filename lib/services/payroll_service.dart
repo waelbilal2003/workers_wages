@@ -33,21 +33,6 @@ class PayrollService {
       AttendanceStorageService();
   final PaymentStorageService _paymentService = PaymentStorageService();
 
-  // دالة مساعدة لاستخراج الرقم والوحدة من نص مثل "7 دولار"
-  Map<String, dynamic> _parseWage(String wageDescription) {
-    if (wageDescription.isEmpty) {
-      return {'value': 0.0, 'unit': ''};
-    }
-    final regex = RegExp(r'(\d+\.?\d*)\s*(.*)');
-    final match = regex.firstMatch(wageDescription);
-    if (match != null) {
-      final value = double.tryParse(match.group(1)!) ?? 0.0;
-      final unit = match.group(2)!.trim();
-      return {'value': value, 'unit': unit};
-    }
-    return {'value': 0.0, 'unit': wageDescription}; // إذا لم يكن هناك رقم
-  }
-
   Future<List<PayrollResult>> calculatePayroll(String selectedDateStr) async {
     final workersData = await _workerService.getAllWorkersWithData();
     if (workersData.isEmpty) return [];
@@ -61,8 +46,9 @@ class PayrollService {
       int absentDays = 0;
       int presentDays = 0;
       double totalAdvances = 0.0;
-      double totalEarnedValue = 0.0;
-      String latestWageUnit = '';
+
+      // الأجرة اليومية مخزنة في balance في worker_index_service
+      final double dailyWage = workerData.balance;
 
       // تحديد تاريخ البداية: آخر قبض أو بداية الشهر
       DateTime startDate = firstDayOfMonth;
@@ -70,7 +56,6 @@ class PayrollService {
         try {
           final collectionDate =
               DateFormat('yyyy/M/d').parse(collectionDates[workerData.name]!);
-          // نبدأ من اليوم التالي لتاريخ القبض
           startDate = collectionDate.add(const Duration(days: 1));
         } catch (_) {}
       }
@@ -80,6 +65,7 @@ class PayrollService {
         final dateString =
             '${currentDate.year}/${currentDate.month}/${currentDate.day}';
 
+        // حساب أيام الحضور والغياب فقط
         final attendanceDoc =
             await _attendanceService.loadAttendanceDocumentForDate(dateString);
         if (attendanceDoc != null) {
@@ -90,17 +76,13 @@ class PayrollService {
           for (var record in workerRecords) {
             if (record.status == 'موجود') {
               presentDays++;
-              final parsedWage = _parseWage(record.wageDescription);
-              totalEarnedValue += parsedWage['value'];
-              if (parsedWage['unit'].isNotEmpty) {
-                latestWageUnit = parsedWage['unit'];
-              }
             } else {
               absentDays++;
             }
           }
         }
 
+        // حساب الدفعات
         final paymentDoc =
             await _paymentService.loadPaymentDocumentForDate(dateString);
         if (paymentDoc != null) {
@@ -112,7 +94,9 @@ class PayrollService {
         }
       }
 
-      final netDueValue = totalEarnedValue - totalAdvances;
+      // الاستحقاق = أيام الحضور × الأجرة اليومية - الدفعات
+      final double totalEarned = presentDays * dailyWage;
+      final double netDueValue = totalEarned - totalAdvances;
 
       results.add(PayrollResult(
         workerName: workerData.name,
@@ -120,8 +104,8 @@ class PayrollService {
         absentDays: absentDays,
         advances: totalAdvances,
         netDue: netDueValue,
-        wageUnit: latestWageUnit,
-        currency: workerData.currency, // إضافة العملة من بيانات العامل
+        wageUnit: '',
+        currency: workerData.currency,
       ));
     }
 
