@@ -200,15 +200,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
       setState(() {
         _payrollFuture = _payrollService.calculatePayroll(widget.selectedDate);
       });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم تسجيل قبض العامل ${result.workerName}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     }
   }
 }

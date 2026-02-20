@@ -252,14 +252,6 @@ class _AdvancePaymentScreenState extends State<AdvancePaymentScreen> {
       setState(() => _hasUnsavedChanges = false);
       await _loadOrCreatePayments();
     }
-
-    setState(() => _isSaving = false);
-    if (!silent && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success ? 'تم الحفظ بنجاح' : 'فشل الحفظ'),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ));
-    }
   }
 
   // --- دوال الاقتراحات ---

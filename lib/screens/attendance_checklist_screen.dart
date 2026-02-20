@@ -99,14 +99,6 @@ class _AttendanceChecklistScreenState extends State<AttendanceChecklistScreen> {
     if (success) {
       setState(() => _hasUnsavedChanges = false);
     }
-
-    setState(() => _isSaving = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success ? 'تم الحفظ بنجاح' : 'فشل الحفظ'),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ));
-    }
   }
 
   void _showStatusDialog(int index) {
