@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'worker_management_screen.dart';
 import 'advance_payment_screen.dart';
-import 'attendance_checklist_screen.dart'; // شاشة جديدة
-import 'payroll_screen.dart'; // شاشة جديدة
+import 'attendance_checklist_screen.dart';
+import 'payroll_screen.dart';
+import 'worker_list_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   final String selectedDate;
@@ -81,6 +82,20 @@ class MainMenuScreen extends StatelessWidget {
                       MaterialPageRoute(
                           builder: (_) =>
                               PayrollScreen(selectedDate: selectedDate)));
+                },
+              ),
+              const SizedBox(height: 20),
+              _buildMenuButton(
+                context: context,
+                text: 'تفاصيل العمال',
+                icon: Icons.person_search,
+                color: Colors.orange[800]!,
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              WorkerListScreen(selectedDate: selectedDate)));
                 },
               ),
             ],
