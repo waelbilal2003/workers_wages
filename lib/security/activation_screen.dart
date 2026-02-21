@@ -276,22 +276,23 @@ class _ActivationScreenState extends State<ActivationScreen> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 20, horizontal: 24),
+                            vertical: 20, horizontal: 6),
                         child: Column(
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: const [
                                 Icon(Icons.support_agent,
-                                    color: Colors.white70, size: 20),
+                                    color: Colors.white70, size: 50),
                                 SizedBox(width: 8),
                                 Text(
-                                  'لفك قفل التطبيق يرجى التواصل',
+                                  'إن اعجبك التطبيق يرجى التواصل \n عن طريق الارقام الآتية:',
                                   style: TextStyle(
                                     color: Colors.white70,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
@@ -301,25 +302,19 @@ class _ActivationScreenState extends State<ActivationScreen> {
 
                             // الأرقام
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 _buildPhoneChip('0944367326'),
-                                const SizedBox(width: 10),
-                                const Text('—',
-                                    style: TextStyle(
-                                        color: Colors.white60, fontSize: 16)),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 5),
                                 _buildPhoneChip('0935017509'),
                               ],
                             ),
 
                             const SizedBox(height: 16),
                             const Divider(color: Colors.white24, thickness: 1),
-                            const SizedBox(height: 12),
 
                             // الاسم
                             const Text(
-                              'المحاسب عدنان محمد الحجي',
+                              'المحاسب عدنان محمد الحجي ',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
