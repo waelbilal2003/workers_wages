@@ -23,7 +23,11 @@ dependencies:
   # Local storage for settings
   path_provider: 2.1.5
   shared_preferences: 2.5.3
-  
+
+   # مكتبات الأمان والحماية
+  device_info_plus: 10.1.2
+
+  http: ^1.1.0  # لإجراء طلبات الشبكة
 dev_dependencies:
   flutter_test:
     sdk: flutter
